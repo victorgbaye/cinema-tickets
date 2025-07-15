@@ -2,6 +2,7 @@ import TicketTypeRequest from './lib/TicketTypeRequest.js';
 import InvalidPurchaseException from './lib/InvalidPurchaseException.js';
 import TicketPaymentService from '../thirdparty/paymentgateway/TicketPaymentService.js';
 import SeatReservationService from '../thirdparty/seatbooking/SeatReservationService.js';
+import { PRICES, MAX_TICKETS } from '../config.js';
 
 export default class TicketService {
   purchaseTickets(accountId, ...ticketTypeRequests) {
@@ -29,8 +30,8 @@ export default class TicketService {
     }
 
     // enforce business rules
-    if (totalCount > 25) {
-      throw new InvalidPurchaseException('Cannot purchase more than 25 tickets at once');
+    if (totalCount > MAX_TICKETS) {
+      throw new InvalidPurchaseException( `Cannot purchase more than ${MAX_TICKETS} tickets at once`);
     }
     if ((childCount > 0 || infantCount > 0) && adultCount === 0) {
       throw new InvalidPurchaseException('Child and Infant tickets require at least one Adult ticket');
@@ -40,7 +41,7 @@ export default class TicketService {
     }
 
     // calculate payment and seats
-    const totalAmount = adultCount * 25 + childCount * 15;
+    const totalAmount = adultCount * PRICES.ADULT + childCount * PRICES.CHILD;
     const seatsToReserve = adultCount + childCount;
 
     // call thirdparty services
