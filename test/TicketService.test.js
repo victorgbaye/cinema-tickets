@@ -1,4 +1,3 @@
-
 import {
   describe,
   test,
@@ -12,24 +11,18 @@ import TicketService from '../src/pairtest/TicketService.js';
 import TicketTypeRequest from '../src/pairtest/lib/TicketTypeRequest.js';
 import InvalidPurchaseException from '../src/pairtest/lib/InvalidPurchaseException.js';
 
-import TicketPaymentService from '../src/thirdparty/paymentgateway/TicketPaymentService.js';
-import SeatReservationService from '../src/thirdparty/seatbooking/SeatReservationService.js';
-
-describe('TicketService.purchaseTickets', () => {
-  let ticketService;
-  let makePaymentSpy;
-  let reserveSeatSpy;
+describe('TicketService.purchaseTickets (with DI)', () => {
+  let paymentMock;
+  let reservationMock;
+  let service;
 
   beforeEach(() => {
-    ticketService = new TicketService();
+    // Create fresh mocks for each test
+    paymentMock = { makePayment: jest.fn() };
+    reservationMock = { reserveSeat: jest.fn() };
 
-    // Spy on external services
-    makePaymentSpy = jest
-      .spyOn(TicketPaymentService.prototype, 'makePayment')
-      .mockImplementation(() => {});
-    reserveSeatSpy = jest
-      .spyOn(SeatReservationService.prototype, 'reserveSeat')
-      .mockImplementation(() => {});
+    // Inject mocks into the service
+    service = new TicketService(paymentMock, reservationMock);
   });
 
   afterEach(() => {
@@ -38,7 +31,7 @@ describe('TicketService.purchaseTickets', () => {
 
   test('throws TypeError for invalid accountId', () => {
     [0, -5, 1.2].forEach(id => {
-      expect(() => ticketService.purchaseTickets(id)).toThrow(TypeError);
+      expect(() => service.purchaseTickets(id)).toThrow(TypeError);
     });
   });
 
@@ -47,19 +40,19 @@ describe('TicketService.purchaseTickets', () => {
       new TicketTypeRequest('ADULT', 20),
       new TicketTypeRequest('CHILD', 6),
     ];
-    expect(() => ticketService.purchaseTickets(1, ...requests))
+    expect(() => service.purchaseTickets(1, ...requests))
       .toThrow(InvalidPurchaseException);
   });
 
   test('throws InvalidPurchaseException if child without adult', () => {
     expect(() =>
-      ticketService.purchaseTickets(1, new TicketTypeRequest('CHILD', 1))
+      service.purchaseTickets(1, new TicketTypeRequest('CHILD', 1))
     ).toThrow(InvalidPurchaseException);
   });
 
   test('throws InvalidPurchaseException if infant without adult', () => {
     expect(() =>
-      ticketService.purchaseTickets(1, new TicketTypeRequest('INFANT', 2))
+      service.purchaseTickets(1, new TicketTypeRequest('INFANT', 2))
     ).toThrow(InvalidPurchaseException);
   });
 
@@ -68,7 +61,7 @@ describe('TicketService.purchaseTickets', () => {
       new TicketTypeRequest('ADULT', 1),
       new TicketTypeRequest('INFANT', 2),
     ];
-    expect(() => ticketService.purchaseTickets(123, ...requests))
+    expect(() => service.purchaseTickets(123, ...requests))
       .toThrow(InvalidPurchaseException);
   });
 
@@ -79,12 +72,12 @@ describe('TicketService.purchaseTickets', () => {
       new TicketTypeRequest('INFANT', 1),
     ];
 
-    ticketService.purchaseTickets(42, ...requests);
+    service.purchaseTickets(42, ...requests);
 
     // Payment: 2×25 + 3×15 = £95
-    expect(makePaymentSpy).toHaveBeenCalledWith(42, 95);
+    expect(paymentMock.makePayment).toHaveBeenCalledWith(42, 95);
 
     // Seats reserved: 2 adults + 3 children = 5
-    expect(reserveSeatSpy).toHaveBeenCalledWith(42, 5);
+    expect(reservationMock.reserveSeat).toHaveBeenCalledWith(42, 5);
   });
 });
