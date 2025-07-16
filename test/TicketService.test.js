@@ -29,6 +29,12 @@ describe('TicketService.purchaseTickets (with DI)', () => {
     jest.restoreAllMocks();
   });
 
+   test('does nothing when no ticket requests provided', () => {
+    service.purchaseTickets(42);
+    expect(paymentMock.makePayment).not.toHaveBeenCalled();
+    expect(reservationMock.reserveSeat).not.toHaveBeenCalled();
+  });
+
   test('throws TypeError for invalid accountId', () => {
     [0, -5, 1.2].forEach(id => {
       expect(() => service.purchaseTickets(id)).toThrow(TypeError);

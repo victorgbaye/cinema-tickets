@@ -14,6 +14,10 @@ export default class TicketService {
       throw new TypeError('accountId must be a positive integer');
     }
 
+    if (ticketRequests.length === 0) {
+      return;
+    }
+
     // total tickets
     let adultCount = 0;
     let childCount = 0;
